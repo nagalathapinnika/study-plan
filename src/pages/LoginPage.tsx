@@ -4,6 +4,8 @@ import { GraduationCap, ArrowRight, Lock, Mail, AlertCircle, Database } from 'lu
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext.js';
 
+import { FirebaseDomainModal } from '../components/FirebaseDomainModal.js';
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
@@ -13,6 +15,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showDomainModal, setShowDomainModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +42,14 @@ export const LoginPage: React.FC = () => {
       await loginWithGoogle();
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Google Sign-In was cancelled or failed.');
+      const msg = err?.message || '';
+      const code = err?.code || '';
+      if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
+        setShowDomainModal(true);
+        setError('Firebase Error: auth/unauthorized-domain. This app domain needs to be added in your Firebase Console.');
+      } else {
+        setError(msg || 'Google Sign-In was cancelled or failed.');
+      }
     } finally {
       setGoogleLoading(false);
     }
@@ -101,10 +111,21 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2"
+              className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex flex-col gap-2"
             >
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-              <span>{error}</span>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                <span className="flex-1">{error}</span>
+              </div>
+              {error.includes('unauthorized-domain') && (
+                <button
+                  type="button"
+                  onClick={() => setShowDomainModal(true)}
+                  className="self-start text-[11px] font-semibold text-rose-800 bg-rose-100 hover:bg-rose-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                >
+                  <span>How to authorize this domain →</span>
+                </button>
+              )}
             </motion.div>
           )}
 
@@ -230,6 +251,12 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </motion.div>
+
+      <FirebaseDomainModal
+        isOpen={showDomainModal}
+        onClose={() => setShowDomainModal(false)}
+        onUseDemo={fillStudentDemo}
+      />
     </div>
   );
 };
