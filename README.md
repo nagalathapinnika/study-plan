@@ -39,9 +39,10 @@ Traditional educational platforms treat all learners identically by serving unif
   - Bcrypt Password Hashing (`bcryptjs`)
   - Google Gemini API (`@google/genai` TypeScript SDK with model `gemini-3.8-flash`)
 
-- **Database**:
-  - Atomic File Database Engine (`.data/db.json` with write-ahead temp file swapping)
-  - Relational Schema Design ready for PostgreSQL migration
+- **Database & Cloud Integrations**:
+  - **Firebase Firestore & Authentication**: Cloud Firestore with schema models (`firebase-blueprint.json`), ABAC zero-trust security rules (`firestore.rules`), and Google OAuth / Firebase ID token verification.
+  - **Cloud SQL (PostgreSQL)**: Scalable relational persistence with Drizzle ORM schemas.
+  - **Local Storage Engine**: Embedded fallback database engine (`.data/db.json` with write-ahead temp file swapping).
 
 ---
 
