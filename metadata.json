@@ -1,0 +1,6 @@
+{
+  "name": "AI-Powered Personalized Learning Assistant",
+  "description": "An intelligent learning platform that analyzes student behavior, performance, and preferences to build adaptive study plans, AI tutoring, quizzes, and learning analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

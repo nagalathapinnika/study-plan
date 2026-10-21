@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 128
+        && (data.role == 'student' || data.role == 'admin');
+    }
+
+    function isValidPlan(data, userId) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.title is string && data.title.size() <= 150
+        && (data.status == 'active' || data.status == 'completed' || data.status == 'archived');
+    }
+
+    function isValidTask(data, userId) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.subject is string && data.subject.size() <= 100
+        && data.topic is string && data.topic.size() <= 150
+        && (data.status == 'Pending' || data.status == 'In Progress' || data.status == 'Completed');
+    }
+
+    function isValidQuizAttempt(data, userId) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.subject is string && data.subject.size() <= 100
+        && data.topic is string && data.topic.size() <= 150
+        && data.score is number
+        && data.totalQuestions is number;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().id == userId
+        && incoming().role == 'student';
+
+      allow update: if isOwner(userId) && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().id == existing().id
+        && incoming().role == existing().role;
+
+      allow delete: if false;
+
+      // User Plans subcollection
+      match /plans/{planId} {
+        allow get, list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(planId)
+          && isValidPlan(incoming(), userId);
+
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(planId)
+          && isValidPlan(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(planId);
+      }
+
+      // User Tasks subcollection
+      match /tasks/{taskId} {
+        allow get, list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(taskId)
+          && isValidTask(incoming(), userId);
+
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(taskId)
+          && isValidTask(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(taskId);
+      }
+
+      // User Quiz Attempts subcollection
+      match /quizAttempts/{attemptId} {
+        allow get, list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(attemptId)
+          && isValidQuizAttempt(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+  }
+}
